@@ -20,7 +20,7 @@ module Heroics
     # @raise [SchemaError] Raised if an unknown resource name is provided.
     def resource(name)
       resource_schema = @resources[name]
-      if @schema['definitions'].has_key?(name)
+      if @schema['definitions']['schemata'].has_key?(name)
         ResourceSchema.new(@schema, name)
       else
         raise SchemaError.new("Unknown resource '#{name}'.")
@@ -53,7 +53,7 @@ module Heroics
     def initialize(schema, name)
       @schema = schema
       @name = name
-      link_schema = schema['definitions'][name]['links']
+      link_schema = schema['definitions']['schemata'][name]['links']
       @links = Hash[link_schema.each_with_index.map do |link, link_index|
                       link_name = Heroics.ruby_name(link['title'])
                       [link_name, LinkSchema.new(schema, name, link_index)]
@@ -130,7 +130,7 @@ module Heroics
     # @return [Hash] A sample request body.
     def example_body
       if body_schema = link_schema['schema']
-        definitions = @schema['definitions'][@resource_name]['definitions']
+        definitions = @schema['definitions']['schemata'][@resource_name]['definitions']
         Hash[body_schema['properties'].keys.map do |property|
                # FIXME This is wrong! -jkakar
                if definitions.has_key?(property)
@@ -179,7 +179,7 @@ module Heroics
     #
     # @param [Hash] The raw link schema.
     def link_schema
-      @schema['definitions'][@resource_name]['links'][@link_index]
+      @schema['definitions']['schemata'][@resource_name]['links'][@link_index]
     end
 
     # Get the names of the parameters this link expects.
@@ -191,7 +191,7 @@ module Heroics
       # FIXME This is all pretty terrible.  It'd be much better to
       # automatically resolve $ref's based on the path instead of special
       # casing everything. -jkakar
-      properties = @schema['definitions'][@resource_name]['properties']
+      properties = @schema['definitions']['schemata'][@resource_name]['properties']
       definitions = Hash[properties.each_pair.map do |key, value|
                            [value['$ref'], key]
                          end]
@@ -202,7 +202,7 @@ module Heroics
         else
           definition_name = definition_name.split('/')[-1]
           resource_definitions = @schema[
-            'definitions'][@resource_name]['definitions'][definition_name]
+            'definitions']['schemata'][@resource_name]['definitions'][definition_name]
           if resource_definitions.has_key?('anyOf')
             resource_definitions['anyOf'].map do |property|
               definitions[property['$ref']]
